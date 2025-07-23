@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(python3:*)",
+      "Bash(source:*)",
+      "Bash(pip install:*)",
+      "Bash(export FLASK_APP=run.py)",
+      "Bash(flask db:*)",
+      "Bash(rm:*)",
+      "Bash(ls:*)",
+      "WebFetch(domain:www.ipa.go.jp)",
+      "Bash(python:*)"
+    ],
+    "deny": []
+  }
+}

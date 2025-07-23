@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero">
+    <h1>基本情報技術者試験 学習アプリ</h1>
+    <p>過去問題で効率的に学習しましょう</p>
+    <a href="{{ url_for('exam.question_list') }}" class="btn btn-primary">問題を解く</a>
+</div>
+
+<div class="features">
+    <div class="feature">
+        <h3>豊富な過去問題</h3>
+        <p>実際の試験形式に沿った問題を収録</p>
+    </div>
+    <div class="feature">
+        <h3>詳細な解説</h3>
+        <p>各問題に分かりやすい解説付き</p>
+    </div>
+    <div class="feature">
+        <h3>学習進捗管理</h3>
+        <p>あなたの成績を記録・分析</p>
+    </div>
+</div>
+{% endblock %}

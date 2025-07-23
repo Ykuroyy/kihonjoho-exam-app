@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}成績 - 基本情報技術者試験{% endblock %}
+
+{% block content %}
+<div class="results-container">
+    <h1>あなたの成績</h1>
+
+    {% if total_questions > 0 %}
+    <div class="summary-card">
+        <h2>全体の成績</h2>
+        <div class="score-display">
+            <div class="score-number">{{ correct_answers }}/{{ total_questions }}</div>
+            <div class="score-percentage">正答率: {{ "%.1f"|format((correct_answers/total_questions * 100) if total_questions > 0 else 0) }}%</div>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ (correct_answers/total_questions * 100) if total_questions > 0 else 0 }}%"></div>
+        </div>
+    </div>
+
+    <div class="category-breakdown">
+        <h2>カテゴリー別成績</h2>
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>カテゴリー</th>
+                    <th>解答数</th>
+                    <th>正解数</th>
+                    <th>正答率</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category, stats in category_stats.items() %}
+                <tr>
+                    <td>{{ category }}</td>
+                    <td>{{ stats.total }}</td>
+                    <td>{{ stats.correct }}</td>
+                    <td>{{ "%.1f"|format((stats.correct/stats.total * 100) if stats.total > 0 else 0) }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="answer-history">
+        <h2>解答履歴</h2>
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>問題番号</th>
+                    <th>カテゴリー</th>
+                    <th>結果</th>
+                    <th>解答日時</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for answer in user_answers %}
+                <tr>
+                    <td>{{ answer.question.number }}</td>
+                    <td><span class="category-tag">{{ answer.question.category }}</span></td>
+                    <td>
+                        {% if answer.is_correct %}
+                            <span class="result-correct">○</span>
+                        {% else %}
+                            <span class="result-incorrect">×</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ answer.answered_at.strftime('%Y/%m/%d %H:%M') }}</td>
+                    <td>
+                        <a href="{{ url_for('exam.question_detail', question_id=answer.question.id) }}" class="btn btn-small">復習する</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="no-results">
+        <p>まだ問題を解いていません。</p>
+        <a href="{{ url_for('exam.question_list') }}" class="btn btn-primary">問題を解く</a>
+    </div>
+    {% endif %}
+
+    <div class="results-actions">
+        <a href="{{ url_for('exam.question_list') }}" class="btn">問題一覧へ</a>
+        <form method="post" action="{{ url_for('exam.reset_session') }}" style="display: inline;">
+            <button type="submit" class="btn" onclick="return confirm('成績をリセットしますか？')">成績をリセット</button>
+        </form>
+    </div>
+</div>
+
+<style>
+.results-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.summary-card {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.score-display {
+    margin: 2rem 0;
+}
+
+.score-number {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.score-percentage {
+    font-size: 1.5rem;
+    color: #666;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background-color: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: #28a745;
+    transition: width 0.3s ease;
+}
+
+.category-breakdown,
+.answer-history {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.results-table,
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.results-table th,
+.results-table td,
+.history-table th,
+.history-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.results-table th,
+.history-table th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+.result-correct {
+    color: #28a745;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.result-incorrect {
+    color: #dc3545;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.no-results {
+    background-color: white;
+    padding: 3rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.results-actions {
+    text-align: center;
+    margin-top: 2rem;
+}
+</style>
+{% endblock %}

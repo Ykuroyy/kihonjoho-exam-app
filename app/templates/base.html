@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}基本情報技術者試験 学習アプリ{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="{{ url_for('main.index') }}" class="logo">基本情報技術者試験</a>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('main.index') }}">ホーム</a></li>
+                <li><a href="{{ url_for('exam.question_list') }}">問題一覧</a></li>
+                <li><a href="{{ url_for('exam.my_results') }}">成績</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 基本情報技術者試験 学習アプリ</p>
+        </div>
+    </footer>
+</body>
+</html>
