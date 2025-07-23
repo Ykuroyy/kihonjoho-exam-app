@@ -13,10 +13,6 @@ except Exception as e:
     logger.error(f"Failed to create Flask app: {e}")
     raise
 
-@app.shell_context_processor
-def make_shell_context():
-    from app.data import get_all_questions
-    return {'get_all_questions': get_all_questions}
 
 # 本番環境でのエラーハンドリング
 @app.errorhandler(500)

@@ -1,7 +1,8 @@
 from flask import render_template, session, request, redirect, url_for, flash
+from collections import defaultdict
+
 from app.exam import bp
 from app.data import get_all_questions, get_question_by_id, get_questions_by_category, get_correct_choice
-from collections import defaultdict
 
 @bp.route('/questions')
 def question_list():
@@ -9,11 +10,9 @@ def question_list():
     if 'answers' not in session:
         session['answers'] = {}
     
+    # カテゴリーフィルター
     category = request.args.get('category')
-    if category:
-        questions = get_questions_by_category(category)
-    else:
-        questions = get_all_questions()
+    questions = get_questions_by_category(category) if category else get_all_questions()
     
     return render_template('exam/question_list.html', questions=questions)
 
@@ -27,22 +26,18 @@ def question_detail(question_id):
         flash('問題が見つかりません。', 'error')
         return redirect(url_for('exam.question_list'))
     
-    # 既に解答済みかチェック
-    show_result = str(question_id) in session['answers']
-    is_correct = False
+    # 解答状態をチェック
+    question_key = str(question_id)
+    show_result = question_key in session['answers']
     correct_choice = get_correct_choice(question)
+    is_correct = False
     
     if show_result:
-        selected_choice_symbol = session['answers'][str(question_id)]
-        is_correct = selected_choice_symbol == correct_choice['symbol']
+        selected_symbol = session['answers'][question_key]
+        is_correct = selected_symbol == correct_choice['symbol']
     
     # 次の問題を取得
-    all_questions = get_all_questions()
-    next_question = None
-    for i, q in enumerate(all_questions):
-        if q['id'] == question_id and i + 1 < len(all_questions):
-            next_question = all_questions[i + 1]
-            break
+    next_question = _get_next_question(question_id)
     
     return render_template('exam/question_detail.html',
                          question=question,
@@ -51,18 +46,20 @@ def question_detail(question_id):
                          correct_choice=correct_choice,
                          next_question=next_question)
 
+def _get_next_question(current_id):
+    """Get the next question after current_id"""
+    all_questions = get_all_questions()
+    for i, q in enumerate(all_questions):
+        if q['id'] == current_id and i + 1 < len(all_questions):
+            return all_questions[i + 1]
+    return None
+
 @bp.route('/question/<int:question_id>/submit', methods=['POST'])
 def submit_answer(question_id):
     if 'answers' not in session:
         session['answers'] = {}
     
-    question = get_question_by_id(question_id)
-    if not question:
-        flash('問題が見つかりません。', 'error')
-        return redirect(url_for('exam.question_list'))
-    
     choice_symbol = request.form.get('choice_symbol')
-    
     if not choice_symbol:
         flash('選択肢を選んでください。', 'error')
         return redirect(url_for('exam.question_detail', question_id=question_id))
@@ -78,14 +75,22 @@ def my_results():
     if 'answers' not in session:
         session['answers'] = {}
     
-    answers = session['answers']
-    all_questions = get_all_questions()
+    # 解答データを集計
+    answered_questions, correct_answers = _calculate_results(session['answers'])
+    category_stats = _calculate_category_stats(answered_questions)
     
-    # 解答した問題のみを集計
+    return render_template('exam/results.html', 
+                         answered_questions=answered_questions,
+                         total_questions=len(answered_questions),
+                         correct_answers=correct_answers,
+                         category_stats=category_stats)
+
+def _calculate_results(answers):
+    """Calculate answered questions and correct count"""
     answered_questions = []
-    correct_answers = 0
+    correct_count = 0
     
-    for question in all_questions:
+    for question in get_all_questions():
         question_id_str = str(question['id'])
         if question_id_str in answers:
             selected_symbol = answers[question_id_str]
@@ -99,23 +104,21 @@ def my_results():
             })
             
             if is_correct:
-                correct_answers += 1
+                correct_count += 1
     
-    total_questions = len(answered_questions)
-    
-    # カテゴリー別集計
+    return answered_questions, correct_count
+
+def _calculate_category_stats(answered_questions):
+    """Calculate statistics by category"""
     category_stats = defaultdict(lambda: {'total': 0, 'correct': 0})
+    
     for answer_data in answered_questions:
         category = answer_data['question']['category']
         category_stats[category]['total'] += 1
         if answer_data['is_correct']:
             category_stats[category]['correct'] += 1
     
-    return render_template('exam/results.html', 
-                         answered_questions=answered_questions,
-                         total_questions=total_questions,
-                         correct_answers=correct_answers,
-                         category_stats=dict(category_stats))
+    return dict(category_stats)
 
 @bp.route('/reset-session', methods=['POST'])
 def reset_session():

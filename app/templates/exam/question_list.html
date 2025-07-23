@@ -5,21 +5,16 @@
 {% block content %}
 <h1>問題一覧</h1>
 
+{% set categories = ['基礎理論', 'アルゴリズム', 'データベース', 'ネットワーク', 'セキュリティ', 'ソフトウェア', 'ハードウェア', 'システム開発', 'プロジェクトマネジメント', '経営戦略'] %}
+
 <div class="question-filters">
     <h3>フィルター</h3>
     <form method="get" action="{{ url_for('exam.question_list') }}">
         <select name="category" onchange="this.form.submit()">
             <option value="">全カテゴリー</option>
-            <option value="基礎理論" {% if request.args.get('category') == '基礎理論' %}selected{% endif %}>基礎理論</option>
-            <option value="アルゴリズム" {% if request.args.get('category') == 'アルゴリズム' %}selected{% endif %}>アルゴリズム</option>
-            <option value="データベース" {% if request.args.get('category') == 'データベース' %}selected{% endif %}>データベース</option>
-            <option value="ネットワーク" {% if request.args.get('category') == 'ネットワーク' %}selected{% endif %}>ネットワーク</option>
-            <option value="セキュリティ" {% if request.args.get('category') == 'セキュリティ' %}selected{% endif %}>セキュリティ</option>
-            <option value="ソフトウェア" {% if request.args.get('category') == 'ソフトウェア' %}selected{% endif %}>ソフトウェア</option>
-            <option value="ハードウェア" {% if request.args.get('category') == 'ハードウェア' %}selected{% endif %}>ハードウェア</option>
-            <option value="システム開発" {% if request.args.get('category') == 'システム開発' %}selected{% endif %}>システム開発</option>
-            <option value="プロジェクトマネジメント" {% if request.args.get('category') == 'プロジェクトマネジメント' %}selected{% endif %}>プロジェクトマネジメント</option>
-            <option value="経営戦略" {% if request.args.get('category') == '経営戦略' %}selected{% endif %}>経営戦略</option>
+            {% for category in categories %}
+                <option value="{{ category }}" {% if request.args.get('category') == category %}selected{% endif %}>{{ category }}</option>
+            {% endfor %}
         </select>
     </form>
 </div>
