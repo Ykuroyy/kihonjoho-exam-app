@@ -24,5 +24,3 @@ def create_app(config_class=Config):
         return {'status': 'healthy', 'app': 'kihonjoho-exam-app'}, 200
 
     return app
-
-from app import models

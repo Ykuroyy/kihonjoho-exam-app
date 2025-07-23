@@ -7,8 +7,6 @@ env/
 venv/
 ENV/
 .env
-*.db
-instance/
 .DS_Store
 .coverage
 htmlcov/
