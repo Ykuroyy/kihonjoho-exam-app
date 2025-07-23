@@ -1,7 +1,17 @@
 from app import create_app
 import os
+import logging
 
-app = create_app()
+# ログ設定
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+try:
+    app = create_app()
+    logger.info("Flask app created successfully")
+except Exception as e:
+    logger.error(f"Failed to create Flask app: {e}")
+    raise
 
 @app.shell_context_processor
 def make_shell_context():
