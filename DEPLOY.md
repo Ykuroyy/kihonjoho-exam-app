@@ -22,13 +22,22 @@ Railwayでデプロイする際は、以下の環境変数を設定してくだ�
 
 ## 初回デプロイ後の設定
 
-デプロイ後、データベースのマイグレーションが必要です：
+デプロイ後、データベースの初期化が必要です：
 
 ```bash
 # Railway CLIを使用
-railway run flask db upgrade
-railway run python seed_data.py  # サンプルデータを投入する場合
+railway run python init_db.py    # データベーステーブル作成
+railway run python seed_data.py  # サンプルデータを投入
 ```
+
+または、Railwayダッシュボードから直接実行：
+1. Railwayダッシュボード → サービスを選択
+2. 「Deploy」タブ → 「Connect」
+3. コンソールで以下を実行：
+   ```
+   python init_db.py
+   python seed_data.py
+   ```
 
 ## トラブルシューティング
 

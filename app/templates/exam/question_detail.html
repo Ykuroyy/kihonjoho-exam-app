@@ -20,9 +20,9 @@
                 <h3>選択肢</h3>
                 {% for choice in question.choices %}
                 <label class="choice-label">
-                    <input type="radio" name="choice_id" value="{{ choice.id }}" required>
-                    <span class="choice-symbol">{{ choice.choice_symbol }}</span>
-                    <span class="choice-text">{{ choice.choice_text }}</span>
+                    <input type="radio" name="choice_symbol" value="{{ choice.symbol }}" required>
+                    <span class="choice-symbol">{{ choice.symbol }}</span>
+                    <span class="choice-text">{{ choice.text }}</span>
                 </label>
                 {% endfor %}
             </div>
@@ -42,7 +42,7 @@
                 <p class="result-message">✅ 正解です！</p>
             {% else %}
                 <p class="result-message">❌ 不正解です</p>
-                <p>正解は「<strong>{{ correct_choice.choice_symbol }}</strong>」{{ correct_choice.choice_text }}です。</p>
+                <p>正解は「<strong>{{ correct_choice.symbol }}</strong>」{{ correct_choice.text }}です。</p>
             {% endif %}
         </div>
 

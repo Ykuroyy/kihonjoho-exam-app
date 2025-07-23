@@ -1,53 +1,48 @@
 from flask import render_template, session, request, redirect, url_for, flash
-import uuid
 from app.exam import bp
-from app.models import Question, UserAnswer, Choice
-from app import db
+from app.data import get_all_questions, get_question_by_id, get_questions_by_category, get_correct_choice
 from collections import defaultdict
 
 @bp.route('/questions')
 def question_list():
-    if 'session_id' not in session:
-        session['session_id'] = str(uuid.uuid4())
+    # セッションで解答状態を初期化
+    if 'answers' not in session:
+        session['answers'] = {}
     
     category = request.args.get('category')
     if category:
-        questions = Question.query.filter_by(category=category).order_by(Question.number).all()
+        questions = get_questions_by_category(category)
     else:
-        questions = Question.query.order_by(Question.number).all()
+        questions = get_all_questions()
     
     return render_template('exam/question_list.html', questions=questions)
 
 @bp.route('/question/<int:question_id>')
 def question_detail(question_id):
-    if 'session_id' not in session:
-        session['session_id'] = str(uuid.uuid4())
+    if 'answers' not in session:
+        session['answers'] = {}
     
-    question = Question.query.get_or_404(question_id)
+    question = get_question_by_id(question_id)
+    if not question:
+        flash('問題が見つかりません。', 'error')
+        return redirect(url_for('exam.question_list'))
     
     # 既に解答済みかチェック
-    session_id = session['session_id']
-    existing_answer = UserAnswer.query.filter_by(
-        session_id=session_id,
-        question_id=question_id
-    ).first()
-    
-    show_result = False
+    show_result = str(question_id) in session['answers']
     is_correct = False
-    correct_choice = None
+    correct_choice = get_correct_choice(question)
     
-    if existing_answer:
-        show_result = True
-        is_correct = existing_answer.is_correct
-        correct_choice = Choice.query.filter_by(
-            question_id=question_id,
-            is_correct=True
-        ).first()
+    if show_result:
+        selected_choice_symbol = session['answers'][str(question_id)]
+        is_correct = selected_choice_symbol == correct_choice['symbol']
     
     # 次の問題を取得
-    next_question = Question.query.filter(
-        Question.number > question.number
-    ).order_by(Question.number).first()
+    all_questions = get_all_questions()
+    next_question = None
+    for i, q in enumerate(all_questions):
+        if q['id'] == question_id and i + 1 < len(all_questions):
+            next_question = all_questions[i + 1]
+            break
     
     return render_template('exam/question_detail.html',
                          question=question,
@@ -58,73 +53,73 @@ def question_detail(question_id):
 
 @bp.route('/question/<int:question_id>/submit', methods=['POST'])
 def submit_answer(question_id):
-    if 'session_id' not in session:
-        session['session_id'] = str(uuid.uuid4())
+    if 'answers' not in session:
+        session['answers'] = {}
     
-    question = Question.query.get_or_404(question_id)
-    choice_id = request.form.get('choice_id')
+    question = get_question_by_id(question_id)
+    if not question:
+        flash('問題が見つかりません。', 'error')
+        return redirect(url_for('exam.question_list'))
     
-    if not choice_id:
+    choice_symbol = request.form.get('choice_symbol')
+    
+    if not choice_symbol:
         flash('選択肢を選んでください。', 'error')
         return redirect(url_for('exam.question_detail', question_id=question_id))
     
-    choice = Choice.query.get_or_404(choice_id)
-    session_id = session['session_id']
-    
-    # 既存の解答をチェック
-    existing_answer = UserAnswer.query.filter_by(
-        session_id=session_id,
-        question_id=question_id
-    ).first()
-    
-    if not existing_answer:
-        # 新規解答
-        answer = UserAnswer(
-            session_id=session_id,
-            question_id=question_id,
-            selected_choice_id=choice_id,
-            is_correct=choice.is_correct
-        )
-        db.session.add(answer)
-        db.session.commit()
+    # セッションに解答を保存
+    session['answers'][str(question_id)] = choice_symbol
+    session.modified = True
     
     return redirect(url_for('exam.question_detail', question_id=question_id))
 
 @bp.route('/results')
 def my_results():
-    if 'session_id' not in session:
-        session['session_id'] = str(uuid.uuid4())
+    if 'answers' not in session:
+        session['answers'] = {}
     
-    session_id = session['session_id']
-    user_answers = UserAnswer.query.filter_by(session_id=session_id)\
-        .join(Question).order_by(Question.number).all()
+    answers = session['answers']
+    all_questions = get_all_questions()
     
-    total_questions = len(user_answers)
-    correct_answers = sum(1 for answer in user_answers if answer.is_correct)
+    # 解答した問題のみを集計
+    answered_questions = []
+    correct_answers = 0
+    
+    for question in all_questions:
+        question_id_str = str(question['id'])
+        if question_id_str in answers:
+            selected_symbol = answers[question_id_str]
+            correct_choice = get_correct_choice(question)
+            is_correct = selected_symbol == correct_choice['symbol']
+            
+            answered_questions.append({
+                'question': question,
+                'selected_symbol': selected_symbol,
+                'is_correct': is_correct
+            })
+            
+            if is_correct:
+                correct_answers += 1
+    
+    total_questions = len(answered_questions)
     
     # カテゴリー別集計
     category_stats = defaultdict(lambda: {'total': 0, 'correct': 0})
-    for answer in user_answers:
-        category = answer.question.category
+    for answer_data in answered_questions:
+        category = answer_data['question']['category']
         category_stats[category]['total'] += 1
-        if answer.is_correct:
+        if answer_data['is_correct']:
             category_stats[category]['correct'] += 1
     
     return render_template('exam/results.html', 
-                         user_answers=user_answers,
+                         answered_questions=answered_questions,
                          total_questions=total_questions,
                          correct_answers=correct_answers,
                          category_stats=dict(category_stats))
 
 @bp.route('/reset-session', methods=['POST'])
 def reset_session():
-    if 'session_id' in session:
-        # 現在のセッションの解答を削除
-        UserAnswer.query.filter_by(session_id=session['session_id']).delete()
-        db.session.commit()
-        
-        # 新しいセッションIDを生成
-        session['session_id'] = str(uuid.uuid4())
-        flash('成績をリセットしました。', 'success')
-    
+    # セッションから解答をクリア
+    session.pop('answers', None)
+    flash('成績をリセットしました。', 'success')
     return redirect(url_for('exam.question_list'))

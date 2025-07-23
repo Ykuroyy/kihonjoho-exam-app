@@ -56,20 +56,20 @@
                 </tr>
             </thead>
             <tbody>
-                {% for answer in user_answers %}
+                {% for answer_data in answered_questions %}
                 <tr>
-                    <td>{{ answer.question.number }}</td>
-                    <td><span class="category-tag">{{ answer.question.category }}</span></td>
+                    <td>{{ answer_data.question.number }}</td>
+                    <td><span class="category-tag">{{ answer_data.question.category }}</span></td>
                     <td>
-                        {% if answer.is_correct %}
+                        {% if answer_data.is_correct %}
                             <span class="result-correct">○</span>
                         {% else %}
                             <span class="result-incorrect">×</span>
                         {% endif %}
                     </td>
-                    <td>{{ answer.answered_at.strftime('%Y/%m/%d %H:%M') }}</td>
+                    <td>本セッション</td>
                     <td>
-                        <a href="{{ url_for('exam.question_detail', question_id=answer.question.id) }}" class="btn btn-small">復習する</a>
+                        <a href="{{ url_for('exam.question_detail', question_id=answer_data.question.id) }}" class="btn btn-small">復習する</a>
                     </td>
                 </tr>
                 {% endfor %}
